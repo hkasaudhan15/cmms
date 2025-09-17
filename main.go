@@ -22,7 +22,10 @@ func main() {
 	fs := http.FileServer(http.Dir("style"))
 	http.Handle("/style/", http.StripPrefix("/style/", fs))
 
-	http.HandleFunc("/services", serviceHandler)
+	http.HandleFunc("/service", serviceListHandler)
+	http.HandleFunc("/service/create", serviceCreateHandler)
+	http.HandleFunc("/service/edit", serviceEditHandler)
+	http.HandleFunc("/service/delete", serviceDeleteHandler)
 
 	fmt.Printf("Using database: %v", db.Name())
 

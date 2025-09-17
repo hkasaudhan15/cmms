@@ -1,34 +1,76 @@
 <!DOCTYPE html>
-<html lang="en">    
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Service Page</title> 
-    <link rel="stylesheet" href="/style/style.css">
+  <title>Services</title>
+  <link rel="stylesheet" href="/style/style.css">
 </head>
 <body>
-    <h1>Available Services</h1>
-    <a href="#serviceAddModel">Add Service</a>
-    <table>
-        <thead>
-            <tr>
-                <th>Service Label</th>
-                <th>Service Notes</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            {{range $i, $s := .}}
-            <tr>
-                <td>{{$s.Label}}</td>
-                <td>{{$s.Notes}}</td>
-                <td>
-                    <a href="#view{{$i}}">View</a>
-                    <a href="#edit{{$i}}">Edit</a>
-                    <a href="#delete{{$i}}">Delete</a>
-                </td>
-            </tr>
-            {{end}}
-        </tbody>
+<h1>Services</h1>
+<a href="#serviceAddModal" class="btn">Add Service</a>
+<table>
+<tr>
+    <th>Label</th>
+    <th>Notes</th>
+    <th>Actions</th>
+</tr>   
+{{range $i, $s := .Services}}
+<tr>
+<td>{{$s.Label}}</td>
+<td>{{$s.Notes}}</td>
+<td>
+  <a href="#view{{$i}}">View</a> |
+  <a href="#edit{{$i}}">Edit</a> |
+  <a href="#delete{{$i}}">Delete</a>
+
+  <div id="view{{$i}}" class="modal">
+    <div class="modal-content">
+      <h2>View Service</h2>
+      <p><b>Label:</b> {{$s.Label}}</p>
+      <p><b>Notes:</b> {{$s.Notes}}</p>
+      <a href="#" class="btn cancel">Close</a>
+    </div>
+  </div>
+
+  <div id="edit{{$i}}" class="modal">
+    <div class="modal-content">
+      <h2>Edit Service</h2>
+      {{if $.Error}}<p style="color:red; font-weight:bold;">{{$.Error}}</p>{{end}}
+      <form method="POST" action="/service/edit?id={{$s.ID.Hex}}">
+        <label>Label:</label><input type="text" name="label" value="{{$s.Label}}" required><br>
+        <label>Notes:</label><textarea name="notes">{{$s.Notes}}</textarea><br>
+        <button type="submit">Save</button>
+        <a href="#" class="btn cancel">Cancel</a>
+      </form>
+    </div>
+  </div>
+
+  <div id="delete{{$i}}" class="modal">
+    <div class="modal-content">
+      <h2>Delete Service</h2>
+      <p><b>Label:</b> {{$s.Label}}</p>
+      <p><b>Notes:</b> {{$s.Notes}}</p>
+      <p style="color:red;">Are you sure?</p>
+      <a href="/service/delete?id={{$s.ID.Hex}}" class="btn">Yes, Delete</a>
+      <a href="#" class="btn cancel">Cancel</a>
+    </div>
+  </div>
+</td>
+</tr>
+{{end}}
+</table>
+
+<div id="serviceAddModal" class="modal">
+  <div class="modal-content">
+    <h2>Add Service</h2>
+    {{if .Error}}<p style="color:red; font-weight:bold;">{{.Error}}</p>{{end}}
+    <form method="POST" action="/service/create">
+      <label>Label:</label><input type="text" name="label" required><br>
+      <label>Notes:</label><textarea name="notes"></textarea><br>
+      <button type="submit">Save</button>
+      <a href="#" class="btn cancel">Cancel</a>
+    </form>
+  </div>
+</div>
+
 </body>
 </html>
