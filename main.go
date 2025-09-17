@@ -27,6 +27,11 @@ func main() {
 	http.HandleFunc("/service/edit", serviceEditHandler)
 	http.HandleFunc("/service/delete", serviceDeleteHandler)
 
+	http.HandleFunc("/consumable", consumableListHandler)
+	http.HandleFunc("/consumable/create", consumableCreateHandler)
+	http.HandleFunc("/consumable/edit", consumableEditHandler)
+	http.HandleFunc("/consumable/delete", consumableDeleteHandler)
+
 	fmt.Printf("Using database: %v", db.Name())
 
 	//Intialising server

@@ -11,6 +11,7 @@ import (
 )
 
 var serviceCollection *mongo.Collection
+var consumableCollection *mongo.Collection
 
 func NewDB(ctx context.Context) (*mongo.Database, *mongo.Client, error) {
 	mongoURI := "mongodb://localhost:27017"
@@ -30,6 +31,7 @@ func NewDB(ctx context.Context) (*mongo.Database, *mongo.Client, error) {
 
 	db := client.Database(dbName)
 	serviceCollection = db.Collection("services")
+	consumableCollection = db.Collection("consumables")
 
 	log.Println("successfully connected to the database")
 

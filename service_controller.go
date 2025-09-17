@@ -10,7 +10,11 @@ import (
 )
 
 func serviceListHandler(w http.ResponseWriter, r *http.Request) {
-	cur, _ := serviceCollection.Find(context.Background(), bson.M{})
+	cur, err := serviceCollection.Find(context.Background(), bson.M{})
+	if err != nil {
+		http.Error(w, "Failed to retrieve services", http.StatusInternalServerError)
+		return
+	}
 	var services []Service
 	cur.All(context.Background(), &services)
 
@@ -33,7 +37,11 @@ func serviceCreateHandler(w http.ResponseWriter, r *http.Request) {
 		notes := r.FormValue("notes")
 
 		if label == "" {
-			cur, _ := serviceCollection.Find(context.Background(), bson.M{})
+			cur, err := serviceCollection.Find(context.Background(), bson.M{})
+			if err != nil {
+				http.Error(w, "Failed to retrieve services", http.StatusInternalServerError)
+				return
+			}
 			var services []Service
 			cur.All(context.Background(), &services)
 
@@ -59,7 +67,11 @@ func serviceCreateHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func serviceEditHandler(w http.ResponseWriter, r *http.Request) {
-	id, _ := primitive.ObjectIDFromHex(r.URL.Query().Get("id"))
+	id, err := primitive.ObjectIDFromHex(r.URL.Query().Get("id"))
+	if err != nil {
+		http.Error(w, "Invalid ID", http.StatusBadRequest)
+		return
+	}
 	if r.Method == http.MethodPost {
 		label := r.FormValue("label")
 		notes := r.FormValue("notes")
@@ -75,7 +87,11 @@ func serviceEditHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func serviceDeleteHandler(w http.ResponseWriter, r *http.Request) {
-	id, _ := primitive.ObjectIDFromHex(r.URL.Query().Get("id"))
+	id, err := primitive.ObjectIDFromHex(r.URL.Query().Get("id"))
+	if err != nil {
+		http.Error(w, "Invalid ID", http.StatusBadRequest)
+		return
+	}
 	serviceCollection.DeleteOne(context.Background(), bson.M{"_id": id})
 	http.Redirect(w, r, "/service", http.StatusSeeOther)
 }

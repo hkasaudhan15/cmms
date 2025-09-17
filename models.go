@@ -7,3 +7,9 @@ type Service struct {
 	Label string             `bson:"label"`
 	Notes string             `bson:"notes"`
 }
+
+type Consumable struct {
+	ID    primitive.ObjectID `bson:"_id"`
+	Label string             `bson:"label"`
+	Notes string             `bson:"notes"`
+}
