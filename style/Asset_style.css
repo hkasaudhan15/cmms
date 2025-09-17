@@ -69,20 +69,26 @@ th {
 .view {
   background-color: #28a745;
   color: #fff;
+  font-size: 12px;
+  padding: 4px 8px;
 }
 
 .edit {
   background-color: #ffc107;
   color: #000;
+  font-size: 12px;
+  padding: 4px 8px;
 }
 
 .delete {
   background-color: #dc3545;
   color: #fff;
+  font-size: 12px;
+  padding: 4px 8px;
 }
 
 .add {
-  background-color: #17a2b8;
+  background-color: #353f41;
   color: #fff;
 }
 
