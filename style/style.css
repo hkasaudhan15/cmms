@@ -1,4 +1,30 @@
-.main{
-    font-family: Arial, sans-serif;
-    margin: 20px;
+table { border-collapse: collapse; width: 100%; }
+th, td { 
+    border: 1px solid #ccc;
+    padding: 8px; 
+    text-align: left;
+     }
+.btn { 
+    padding: 5px 10px; 
+    background: #007BFF; 
+    color: white; 
+    text-decoration: none; 
+    border-radius: 5px; }
+.btn.cancel { background: gray; }
+
+.modal {
+  display: none;
+  position: fixed;
+  top:0; left:0; right:0; bottom:0;
+  background: rgba(0,0,0,0.6);
+}
+.modal:target { 
+    display: block; 
+}
+.modal-content {
+  background: #fff;
+  padding: 20px;
+  margin: 5% auto;
+  max-width: 500px;
+  border-radius: 8px;
 }

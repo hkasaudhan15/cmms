@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-
-	"github.com/gorilla/mux"
 )
 
 func main() {
@@ -21,15 +19,13 @@ func main() {
 		return
 	}
 
+	fs := http.FileServer(http.Dir("style"))
+	http.Handle("/style/", http.StripPrefix("/style/", fs))
+
+	http.HandleFunc("/services", serviceHandler)
+
 	fmt.Printf("Using database: %v", db.Name())
 
-	//setting up router and routes
-	router := mux.NewRouter()
-
-
 	//Intialising server
-	fmt.Println("server running on port 5500")
-	if err := http.ListenAndServe(":5500", router); err != nil {
-		log.Fatal(err)
-	}
+	http.ListenAndServe(":8080", nil)
 }

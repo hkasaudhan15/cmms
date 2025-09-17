@@ -10,6 +10,8 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
+var serviceCollection *mongo.Collection
+
 func NewDB(ctx context.Context) (*mongo.Database, *mongo.Client, error) {
 	mongoURI := "mongodb://localhost:27017"
 	dbName := "CMMS"
@@ -27,6 +29,8 @@ func NewDB(ctx context.Context) (*mongo.Database, *mongo.Client, error) {
 	}
 
 	db := client.Database(dbName)
+	serviceCollection = db.Collection("services")
+
 	log.Println("successfully connected to the database")
 
 	return db, client, nil
