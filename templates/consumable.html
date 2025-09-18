@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Consumables</title>
+  <link rel="stylesheet" href="/style/style.css">
+</head>
+<body>
+<h1>Consumables</h1>
+<a href="#consumableAddModal" class="btn">Add Consumable</a>
+<table>
+<tr>
+    <th>Label</th>
+    <th>Notes</th>   
+    <th>Actions</th>
+</tr>
+{{range $i, $c := .Consumables}}
+<tr>
+<td>{{$c.Label}}</td>
+<td>{{$c.Notes}}</td>
+<td>
+  <a href="#view{{$i}}">View</a> |
+  <a href="#edit{{$i}}">Edit</a> |
+  <a href="#delete{{$i}}">Delete</a>
+
+  <div id="view{{$i}}" class="modal">
+    <div class="modal-content">
+      <h2>View Consumable</h2>
+      <p><b>Label:</b> {{$c.Label}}</p>
+      <p><b>Notes:</b> {{$c.Notes}}</p>
+      <a href="#" class="btn cancel">Close</a>
+    </div>
+  </div>
+
+  <div id="edit{{$i}}" class="modal">
+    <div class="modal-content">
+      <h2>Edit Consumable</h2>
+      {{if $.Error}}<p style="color:red; font-weight:bold;">{{$.Error}}</p>{{end}}
+      <form method="POST" action="/consumable/edit?id={{$c.ID.Hex}}">
+        <label>Label:</label><input type="text" name="label" value="{{$c.Label}}" required><br>
+        <label>Notes:</label><textarea name="notes">{{$c.Notes}}</textarea><br>
+        <button type="submit">Save</button>
+        <a href="#" class="btn cancel">Cancel</a>
+      </form>
+    </div>
+  </div>
+
+  <div id="delete{{$i}}" class="modal">
+    <div class="modal-content">
+      <h2>Delete Consumable</h2>
+      <p><b>Label:</b> {{$c.Label}}</p>
+      <p><b>Notes:</b> {{$c.Notes}}</p>
+      <p style="color:red;">Are you sure?</p>
+      <a href="/consumable/delete?id={{$c.ID.Hex}}" class="btn">Yes, Delete</a>
+      <a href="#" class="btn cancel">Cancel</a>
+    </div>
+  </div>
+</td>
+</tr>
+{{end}}
+</table>
+
+<div id="consumableAddModal" class="modal">
+  <div class="modal-content">
+    <h2>Add Consumable</h2>
+    {{if .Error}}<p style="color:red; font-weight:bold;">{{.Error}}</p>{{end}}
+    <form method="POST" action="/consumable/create">
+      <label>Label:</label><input type="text" name="label" required><br>
+      <label>Notes:</label><textarea name="notes"></textarea><br>
+      <button type="submit">Save</button>
+      <a href="#" class="btn cancel">Cancel</a>
+    </form>
+  </div>
+</div>
+
+</body>
+</html>

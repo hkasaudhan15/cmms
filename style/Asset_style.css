@@ -1,0 +1,98 @@
+/* General styles */
+body {
+  background-color: #fff;
+  color: #000;
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 20px;
+}
+
+/* Container */
+.container {
+  max-width: 800px;
+  margin: auto;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  padding: 20px;
+  background-color: #f9f9f9;
+}
+
+/* Heading */
+h2 {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+/* Top & Bottom bar */
+.top-bar, .bottom-bar {
+  display: flex;
+  justify-content: flex-end;
+  margin: 10px 0;
+}
+
+/* Table */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+}
+
+table, th, td {
+  border: 1px solid #ccc;
+}
+
+th, td {
+  padding: 10px;
+  text-align: center;
+}
+
+th {
+  background-color: #eaeaea;
+}
+
+/* Buttons */
+.btn {
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  border: none;
+  margin: 2px;
+  font-size: 14px;
+}
+
+/* Button styles */
+.dashboard {
+  background-color: #007BFF;
+  color: #fff;
+}
+
+.view {
+  background-color: #28a745;
+  color: #fff;
+  font-size: 12px;
+  padding: 4px 8px;
+}
+
+.edit {
+  background-color: #ffc107;
+  color: #000;
+  font-size: 12px;
+  padding: 4px 8px;
+}
+
+.delete {
+  background-color: #dc3545;
+  color: #fff;
+  font-size: 12px;
+  padding: 4px 8px;
+}
+
+.add {
+  background-color: #353f41;
+  color: #fff;
+}
+
+/* Hover effect */
+.btn:hover {
+  opacity: 0.8;
+}

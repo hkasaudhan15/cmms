@@ -36,26 +36,14 @@ func main() {
 	// Initialize templates - include nested template files (e.g. templates/maintenence/*.html)
 	templates = template.Must(template.ParseGlob("templates/**/*.html"))
 
-	fmt.Printf("Using database: %v\n", db.Name())
+	fmt.Printf("Using database: %v", db.Name())
 
-	// Setting up router and routes
+	//setting up router and routes
 	router := mux.NewRouter()
 
-	// Serve static files
-	router.PathPrefix("/style/").Handler(http.StripPrefix("/style/", http.FileServer(http.Dir("style/"))))
-
-	// Maintenance Routes
-	router.HandleFunc("/maintenances", listMaintenance)
-	router.HandleFunc("/maintenances/create", createMaintenance)
-	router.HandleFunc("/maintenances/edit", editMaintenance)
-	router.HandleFunc("/maintenances/view", viewMaintenance)
-	router.HandleFunc("/maintenances/delete", deleteMaintenance)
-	router.HandleFunc("/shedules/add", addShedule)
-	router.HandleFunc("/shedules/delete", deleteShedule)
-
-	// Initializing server
-	fmt.Println("server running on port 8080")
-	if err := http.ListenAndServe(":8080", router); err != nil {
+	//Intialising server
+	fmt.Println("server running on port 5500")
+	if err := http.ListenAndServe(":5500", router); err != nil {
 		log.Fatal(err)
 	}
 }
