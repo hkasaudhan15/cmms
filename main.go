@@ -3,8 +3,17 @@ package main
 import (
 	"context"
 	"fmt"
+	"html/template"
 	"log"
 	"net/http"
+
+	"go.mongodb.org/mongo-driver/mongo"
+)
+
+var (
+	db        *mongo.Database
+	client    *mongo.Client
+	templates *template.Template
 )
 
 func main() {
@@ -13,12 +22,15 @@ func main() {
 	defer cancel()
 
 	//initializing db
-	db, _, err := NewDB(ctx)
+	db, client, err := NewDB(ctx)
 	if err != nil {
 		log.Fatal(err)
 		return
 	}
 
+	defer client.Disconnect(ctx)
+
+	templates = template.Must(template.ParseGlob("templates/**/*.html"))
 	fs := http.FileServer(http.Dir("style"))
 	http.Handle("/style/", http.StripPrefix("/style/", fs))
 
@@ -32,7 +44,14 @@ func main() {
 	http.HandleFunc("/consumable/edit", consumableEditHandler)
 	http.HandleFunc("/consumable/delete", consumableDeleteHandler)
 
-	
+	// Maintenance Routes
+	http.HandleFunc("/maintenances", listMaintenance)
+	http.HandleFunc("/maintenances/create", createMaintenance)
+	http.HandleFunc("/maintenances/edit", editMaintenance)
+	http.HandleFunc("/maintenances/view", viewMaintenance)
+	http.HandleFunc("/maintenances/delete", deleteMaintenance)
+	http.HandleFunc("/shedules/add", addShedule)
+	http.HandleFunc("/shedules/delete", deleteShedule)
 
 	fmt.Printf("Using database: %v", db.Name())
 
