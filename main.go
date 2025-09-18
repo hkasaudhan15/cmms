@@ -22,7 +22,8 @@ func main() {
 	defer cancel()
 
 	//initializing db
-	db, client, err := NewDB(ctx)
+	var err error
+	db, client, err = NewDB(ctx)
 	if err != nil {
 		log.Fatal(err)
 		return
@@ -56,5 +57,5 @@ func main() {
 	fmt.Printf("Using database: %v", db.Name())
 
 	//Intialising server
-	http.ListenAndServe(":8080", nil)
+	http.ListenAndServe("localhost:8080", nil)
 }
