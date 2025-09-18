@@ -1,6 +1,10 @@
 package main
 
-import "go.mongodb.org/mongo-driver/bson/primitive"
+import (
+	"time"
+
+	"go.mongodb.org/mongo-driver/bson/primitive"
+)
 
 type Service struct {
 	ID    primitive.ObjectID `bson:"_id"`
@@ -29,4 +33,17 @@ type MainteneceShedule struct {
 	Lable    string             `bson:"label"`
 	AssetID  primitive.ObjectID `bson:"asset_id"`
 	Shedules []Shedule          `bson:"shedules"`
+}
+
+type Asset struct {
+	ID            primitive.ObjectID `bson:"_id,omitempty" json:"id"`
+	Label         string             `bson:"label" json:"label"`
+	Type          string             `bson:"type" json:"type"`
+	Location      string             `bson:"location" json:"location"`
+	EffectiveDate time.Time          `bson:"effective_date" json:"effective_date"`
+}
+
+type AllAssets struct {
+	Data    []Asset
+	Error   string
 }

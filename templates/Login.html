@@ -11,6 +11,12 @@
   <div class="container">
     <h2>ASSETS</h2>
 
+    {{if .Error}}
+    <div style="color: red; margin: 10px 0;">
+      {{.Error}}
+    </div>
+    {{end}}
+
     <!-- Dashboard button -->
     <div class="top-bar">
       <button class="btn dashboard">DASHBOARD</button>
@@ -24,21 +30,34 @@
     <th>TYPE</th>
     <th>ACTIONS</th>
   </tr>
-
-  <!-- Input row -->
-  <tr>
-    <td><input type="text" placeholder="Enter S. NO." /></td>
-    <td><input type="text" placeholder="Enter Label" /></td>
-    <td><input type="text" placeholder="Enter Type" /></td>
-    <td class="actions">
-     <!-- <button class="btn add">ADD</button> -->
-      <button class="btn view">VIEW</button>
-      <button class="btn edit">EDIT</button>
-      <button class="btn delete">DELETE</button>
-    </td>
-  </tr>
+  {{if .Data}}
+    {{range $index, $asset := .Data}}
+      <tr>
+        <td>{{add $index 1}}</td>
+        <td>{{$asset.Label}}</td>
+        <td>{{$asset.Type}}</td>
+        <td class="actions">
+          <form method="GET" action="#" style="display:inline-block; margin-right:5px;">
+            <button class="btn view">VIEW</button>
+          </form>
+          <form method="POST" action="#" style="display:inline-block; margin-right:5px;">
+            <button class="btn edit">EDIT</button>
+          </form>
+          <form method="POST" action="#" style="display:inline-block;">
+            <button class="btn delete">DELETE</button>
+          </form>
+        </td>
+      </tr>
+  {{end}}
+  {{else}}
+      <tr>
+        <td colspan="4" style="text-align: center; color: gray;">
+          No assets avaliable
+        </td> 
+      </tr>  
+  {{end}}
   </table>
-  
+
 
     <!-- Add button -->
     <div class="bottom-bar">
