@@ -33,7 +33,7 @@ func main() {
 
 	templates = template.Must(template.New("").Funcs(template.FuncMap{
 		"add": func(a, b int) int { return a + b },
-	}).ParseGlob("templates/*.html"))
+	}).ParseGlob("templates/**/*.html"))
 
 	fs := http.FileServer(http.Dir("style"))
 	http.Handle("/style/", http.StripPrefix("/style/", fs))
