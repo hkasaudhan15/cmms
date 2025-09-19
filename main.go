@@ -33,7 +33,8 @@ func main() {
 
 	templates = template.Must(template.New("").Funcs(template.FuncMap{
 		"add": func(a, b int) int { return a + b },
-	}).ParseGlob("templates/**/*.html"))
+	}).ParseGlob("templates/*.html"))
+	templates = template.Must(templates.ParseGlob("templates/*/*.html"))
 
 	fs := http.FileServer(http.Dir("style"))
 	http.Handle("/style/", http.StripPrefix("/style/", fs))
@@ -60,6 +61,7 @@ func main() {
 	http.HandleFunc("/assets", getAssets(db))
 	http.HandleFunc("/add_asset", addAsset(db))
 	http.HandleFunc("/edit_asset/", editAsset(db))
+	http.HandleFunc("/delete_asset/", deleteAsset(db))
 
 
 	fmt.Printf("Using database: %v", db.Name())

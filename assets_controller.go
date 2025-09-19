@@ -30,7 +30,10 @@ func getAssets(db *mongo.Database) http.HandlerFunc {
 			result.Error = errMsg
 		}
 
-		templates.ExecuteTemplate(w, "Login.html", result)
+		if err := templates.ExecuteTemplate(w, "Login.html", result); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 	}
 }
 
@@ -98,5 +101,25 @@ func editAsset(db *mongo.Database) http.HandlerFunc {
 		}
 
 		http.Redirect(w, r, "/assets?success=Asset+updated+successfully", http.StatusSeeOther)
+	}
+}
+
+func deleteAsset(db *mongo.Database) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+		idStr := strings.TrimPrefix(r.URL.Path, "/delete_asset/")
+		objID, err := primitive.ObjectIDFromHex(idStr)
+		if err != nil {
+			http.Redirect(w, r, "/assets?error=Invalid+asset+ID", http.StatusSeeOther)
+			return
+		}
+
+		err = deleteAssetByID(ctx, db, objID)
+		if err != nil {
+			http.Redirect(w, r, "/assets?error=Failed+to+delete+asset", http.StatusSeeOther)
+			return
+		}
+
+		http.Redirect(w, r, "/assets?success=Asset+deleted+successfully", http.StatusSeeOther)
 	}
 }

@@ -45,3 +45,8 @@ func updateAsset(ctx context.Context, db *mongo.Database, id primitive.ObjectID,
 	)
 	return err
 }
+
+func deleteAssetByID(ctx context.Context, db *mongo.Database, id primitive.ObjectID) error {
+	_, err := db.Collection("assets").DeleteOne(ctx, bson.M{"_id": id})
+	return err
+}
