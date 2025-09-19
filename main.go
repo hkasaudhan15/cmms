@@ -59,6 +59,7 @@ func main() {
 
 	http.HandleFunc("/assets", getAssets(db))
 	http.HandleFunc("/add_asset", addAsset(db))
+	http.HandleFunc("/edit_asset/", editAsset(db))
 
 
 	fmt.Printf("Using database: %v", db.Name())
