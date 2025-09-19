@@ -32,7 +32,7 @@ func main() {
 	defer client.Disconnect(ctx)
 
 	templates = template.Must(template.New("").Funcs(template.FuncMap{
-    "add": func(a, b int) int { return a + b },
+		"add": func(a, b int) int { return a + b },
 	}).ParseGlob("templates/*.html"))
 
 	fs := http.FileServer(http.Dir("style"))
@@ -58,6 +58,8 @@ func main() {
 	http.HandleFunc("/shedules/delete", deleteShedule)
 
 	http.HandleFunc("/assets", getAssets(db))
+	http.HandleFunc("/add_asset", addAsset(db))
+
 
 	fmt.Printf("Using database: %v", db.Name())
 

@@ -43,7 +43,8 @@ type Asset struct {
 	EffectiveDate time.Time          `bson:"effective_date" json:"effective_date"`
 }
 
-type AllAssets struct {
-	Data    []Asset
-	Error   string
+type AssetsPageData struct {
+    Data    []Asset
+    Message string
+    Error   string
 }

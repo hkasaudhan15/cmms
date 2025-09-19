@@ -24,3 +24,9 @@ func getAllAssets(ctx context.Context, db *mongo.Database) ([]Asset, error) {
 
 	return result, nil
 }
+
+func insertAsset(ctx context.Context, db *mongo.Database, asset Asset) error {
+	collection := db.Collection("assets")
+	_, err := collection.InsertOne(ctx, asset)
+	return err
+}
