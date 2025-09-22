@@ -133,9 +133,27 @@
         <label for="label">Label:</label>
         <input type="text" id="label" name="label" required>
         <label for="type">Type:</label>
-        <input type="text" id="type" name="type" required>
+        <select id="type" name="type" required>
+          <option value="">-- Select Type --</option>
+          <option value="Machine">Machine</option>
+          <option value="Equipment">Equipment</option>
+          <option value="Tool">Tool</option>
+          <option value="Vehicle">Vehicle</option>
+          <option value="Furniture">Furniture</option>
+          <option value="IT Device">IT Device</option>
+          <option value="Safety Gear">Safety Gear</option>
+        </select>
         <label for="location">Location:</label>
-        <input type="text" id="location" name="location" required>
+        <select id="location" name="location" required>
+          <option value="">-- Select Location --</option>
+          <option value="Production Floor">Production Floor</option>
+          <option value="Warehouse">Warehouse</option>
+          <option value="Assembly Line">Assembly Line</option>
+          <option value="Quality Control Lab">Quality Control Lab</option>
+          <option value="Maintenance Room">Maintenance Room</option>
+          <option value="Office">Office</option>
+          <option value="Loading Dock">Loading Dock</option>
+        </select>
         <label for="effective_date">Effective Date:</label>
         <input type="date" id="effective_date" name="effective_date" required>
         <button type="submit" class="btn save" style="background-color: blue;">Save</button>
@@ -152,9 +170,25 @@
         <label>Label:</label>
         <input type="text" name="label" value="{{$asset.Label}}" required>
         <label>Type:</label>
-        <input type="text" name="type" value="{{$asset.Type}}" required>
+        <select name="type" required>
+          <option value="Machine" {{if eq $asset.Type "Machine"}}selected{{end}}>Machine</option>
+          <option value="Equipment" {{if eq $asset.Type "Equipment"}}selected{{end}}>Equipment</option>
+          <option value="Tool" {{if eq $asset.Type "Tool"}}selected{{end}}>Tool</option>
+          <option value="Vehicle" {{if eq $asset.Type "Vehicle"}}selected{{end}}>Vehicle</option>
+          <option value="Furniture" {{if eq $asset.Type "Furniture"}}selected{{end}}>Furniture</option>
+          <option value="IT Device" {{if eq $asset.Type "IT Device"}}selected{{end}}>IT Device</option>
+          <option value="Safety Gear" {{if eq $asset.Type "Safety Gear"}}selected{{end}}>Safety Gear</option>
+        </select>
         <label>Location:</label>
-        <input type="text" name="location" value="{{$asset.Location}}" required>
+        <select name="location" required>
+          <option value="Production Floor" {{if eq $asset.Location "Production Floor"}}selected{{end}}>Production Floor</option>
+          <option value="Warehouse" {{if eq $asset.Location "Warehouse"}}selected{{end}}>Warehouse</option>
+          <option value="Assembly Line" {{if eq $asset.Location "Assembly Line"}}selected{{end}}>Assembly Line</option>
+          <option value="Quality Control Lab" {{if eq $asset.Location "Quality Control Lab"}}selected{{end}}>Quality Control Lab</option>
+          <option value="Maintenance Room" {{if eq $asset.Location "Maintenance Room"}}selected{{end}}>Maintenance Room</option>
+          <option value="Office" {{if eq $asset.Location "Office"}}selected{{end}}>Office</option>
+          <option value="Loading Dock" {{if eq $asset.Location "Loading Dock"}}selected{{end}}>Loading Dock</option>
+        </select>
         <label>Effective Date:</label>
         <input type="date" name="effective_date" value="{{$asset.EffectiveDate.Format "2006-01-02"}}" required>
         <button type="submit" class="btn save" style="background-color: blue;">Save</button>
