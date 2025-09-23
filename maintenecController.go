@@ -48,7 +48,7 @@ func fetchServicesAndConsumables(ctx context.Context) ([]struct {
 
 // Helper function to build service and consumable name maps
 func buildNameMaps(ctx context.Context, svcIDs, consIDs []primitive.ObjectID) (map[string]string, map[string]string) {
-	// Fetch names for services
+
 	svcNames := map[string]string{}
 	if len(svcIDs) > 0 {
 		cursor, err := db.Collection("services").Find(ctx, bson.M{"_id": bson.M{"$in": svcIDs}})
@@ -98,7 +98,6 @@ func collectScheduleIDs(schedules []Shedule) ([]primitive.ObjectID, []primitive.
 		}
 	}
 
-	// Helper to convert set to slice for query
 	var svcIDs []primitive.ObjectID
 	for id := range svcIDSet {
 		svcIDs = append(svcIDs, id)
@@ -118,10 +117,10 @@ func getAssetLabel(ctx context.Context, assetID primitive.ObjectID) string {
 	if err == nil && asset.Label != "" {
 		return asset.Label
 	} else if err == nil {
-		// Asset found but label is empty, fallback to ID
+
 		return assetID.Hex()
 	} else {
-		// Asset not found, fallback to ID
+
 		return assetID.Hex()
 	}
 }
@@ -159,7 +158,6 @@ func listMaintenance(w http.ResponseWriter, r *http.Request) {
 	// Fetch available services and consumables
 	services, consumables := fetchServicesAndConsumables(ctx)
 
-	// Build lookup maps for labels
 	svcNames := map[string]string{}
 	for _, s := range services {
 		svcNames[s.ID.Hex()] = s.Label
@@ -169,7 +167,6 @@ func listMaintenance(w http.ResponseWriter, r *http.Request) {
 		consNames[c.ID.Hex()] = c.Label
 	}
 
-	// Fetch asset label from assets collection
 	assetLabel := getAssetLabel(ctx, objAssetID)
 
 	// Check for any message to display
@@ -223,7 +220,7 @@ func createMaintenance(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method == http.MethodGet {
 
-		renderTemplate(w, "create.html", assetID) // pass asset_id to form
+		renderTemplate(w, "create.html", assetID)
 		return
 	}
 
@@ -422,7 +419,6 @@ func listSchedules(w http.ResponseWriter, r *http.Request) {
 	// Build name maps for services & consumables
 	svcNames, consNames := buildNameMaps(ctx, svcIDs, consIDs)
 
-	// Fetch asset label for display
 	assetLabel := getAssetLabel(ctx, objAssetID)
 
 	// Check for any message to display
@@ -678,7 +674,6 @@ func viewMaintenance(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Collect all referenced service and consumable IDs from schedules
 	svcIDs, consIDs := collectScheduleIDs(item.Shedules)
 
 	// Build name maps
