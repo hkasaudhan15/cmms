@@ -176,7 +176,6 @@ func listMaintenance(w http.ResponseWriter, r *http.Request) {
 	message := r.URL.Query().Get("message")
 	messageType := r.URL.Query().Get("type")
 
-	// Pass asset_id, asset_label, items, services, consumables, and lookup maps
 	data := struct {
 		AssetID    string
 		AssetLabel string
@@ -223,8 +222,7 @@ func createMaintenance(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Method == http.MethodGet {
-		// We no longer need this as we're using a popup now
-		// But keeping it for backward compatibility
+
 		renderTemplate(w, "create.html", assetID) // pass asset_id to form
 		return
 	}
@@ -282,7 +280,6 @@ func editMaintenance(w http.ResponseWriter, r *http.Request) {
 		// Fetch available services and consumables to populate dropdowns
 		services, consumables := fetchServicesAndConsumables(ctx)
 
-		// Build data object that includes the maintenance, services, and consumables
 		data := struct {
 			MainteneceShedule
 			Services []struct {
@@ -337,7 +334,6 @@ func editMaintenance(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		// Redirect back to list with success message
 		http.Redirect(w, r, "/maintenances?asset_id="+item.AssetID.Hex()+"&message=Maintenance updated successfully&type=success", http.StatusSeeOther)
 		return
 	}
@@ -377,51 +373,69 @@ func deleteMaintenance(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/maintenances?asset_id="+item.AssetID.Hex()+"&message=Maintenance deleted successfully&type=success", http.StatusSeeOther)
 }
 
-// List schedules for a maintenance
+// List schedules for an asset
 func listSchedules(w http.ResponseWriter, r *http.Request) {
-	maintenanceID := r.URL.Query().Get("maintenance_id")
-	if maintenanceID == "" {
-		http.Error(w, "Missing maintenance_id in query", http.StatusBadRequest)
+	assetID := r.URL.Query().Get("asset_id")
+	if assetID == "" {
+		http.Error(w, "Missing asset_id in query", http.StatusBadRequest)
 		return
 	}
 
-	objMaintenanceID, err := primitive.ObjectIDFromHex(maintenanceID)
+	objAssetID, err := primitive.ObjectIDFromHex(assetID)
 	if err != nil {
-		http.Error(w, "Invalid maintenance_id", http.StatusBadRequest)
+		http.Error(w, "Invalid asset_id", http.StatusBadRequest)
 		return
 	}
 
 	ctx, cancel := getCtx()
 	defer cancel()
 
-	// Fetch the maintenance item
-	var maintenance MainteneceShedule
-	err = db.Collection("maintenances").FindOne(ctx, bson.M{"_id": objMaintenanceID}).Decode(&maintenance)
+	cursor, err := db.Collection("maintenances").Find(ctx, bson.M{"asset_id": objAssetID})
 	if err != nil {
-		http.Error(w, "Maintenance not found: "+err.Error(), http.StatusNotFound)
+		http.Error(w, "Failed to fetch maintenances: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer cursor.Close(ctx)
+
+	var maintenances []MainteneceShedule
+	if err = cursor.All(ctx, &maintenances); err != nil {
+		http.Error(w, "Failed to decode maintenances: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	// Fetch asset label for display
-	assetLabel := getAssetLabel(ctx, maintenance.AssetID)
+	if len(maintenances) == 0 {
+		http.Error(w, "No maintenances found for asset", http.StatusNotFound)
+		return
+	}
 
-	// Collect all referenced service and consumable IDs from schedules
-	svcIDs, consIDs := collectScheduleIDs(maintenance.Shedules)
+	var allSchedules []Shedule
+	var svcIDs, consIDs []primitive.ObjectID
 
-	// Build name maps
+	for _, m := range maintenances {
+		allSchedules = append(allSchedules, m.Shedules...)
+
+		sIDs, cIDs := collectScheduleIDs(m.Shedules)
+		svcIDs = append(svcIDs, sIDs...)
+		consIDs = append(consIDs, cIDs...)
+	}
+
+	// Build name maps for services & consumables
 	svcNames, consNames := buildNameMaps(ctx, svcIDs, consIDs)
+
+	// Fetch asset label for display
+	assetLabel := getAssetLabel(ctx, objAssetID)
 
 	// Check for any message to display
 	message := r.URL.Query().Get("message")
 	messageType := r.URL.Query().Get("type")
 
-	// Fetch available services and consumables for dropdowns
 	services, consumables := fetchServicesAndConsumables(ctx)
 
 	data := struct {
-		Maintenance MainteneceShedule
-		AssetLabel  string
-		Services    []struct {
+		Maintenances []MainteneceShedule
+		Schedules    []Shedule
+		AssetLabel   string
+		Services     []struct {
 			ID    primitive.ObjectID `bson:"_id"`
 			Label string             `bson:"label"`
 		}
@@ -434,7 +448,8 @@ func listSchedules(w http.ResponseWriter, r *http.Request) {
 		Message         string
 		MessageType     string
 	}{
-		Maintenance:     maintenance,
+		Maintenances:    maintenances,
+		Schedules:       allSchedules,
 		AssetLabel:      assetLabel,
 		Services:        services,
 		Consumables:     consumables,
@@ -469,7 +484,7 @@ func addSchedule(w http.ResponseWriter, r *http.Request) {
 
 	days, _ := strconv.Atoi(r.FormValue("days"))
 
-	// Parse selected services and consumables (multiple values possible)
+	// Parse selected services and consumables
 	svcVals := r.Form["services[]"]
 	consVals := r.Form["consumables[]"]
 
@@ -500,7 +515,6 @@ func addSchedule(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := getCtx()
 	defer cancel()
 
-	// Ensure 'shedules' is an array (not null or missing) before pushing
 	ensureFilter := bson.M{"_id": objMaintenance, "$or": []bson.M{{"shedules": bson.M{"$exists": false}}, {"shedules": nil}}}
 	ensureUpdate := bson.M{"$set": bson.M{"shedules": []Shedule{}}}
 	_, _ = db.Collection("maintenances").UpdateOne(ctx, ensureFilter, ensureUpdate)
@@ -512,8 +526,14 @@ func addSchedule(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Redirect back to schedule list with success message
-	http.Redirect(w, r, "/schedules?maintenance_id="+maintenanceID+"&message=Schedule added successfully&type=success", http.StatusSeeOther)
+	var maintenance MainteneceShedule
+	if err := db.Collection("maintenances").FindOne(ctx, bson.M{"_id": objMaintenance}).Decode(&maintenance); err != nil {
+		http.Error(w, "Maintenance not found for redirect", http.StatusInternalServerError)
+		return
+	}
+
+	// Redirect with asset_id
+	http.Redirect(w, r, "/schedules?asset_id="+maintenance.AssetID.Hex()+"&message=Schedule added successfully&type=success", http.StatusSeeOther)
 }
 
 // Edit schedule
@@ -538,7 +558,6 @@ func editSchedule(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Parse form
 	if err := r.ParseForm(); err != nil {
 		http.Error(w, "Parse form error: "+err.Error(), http.StatusBadRequest)
 		return
@@ -546,7 +565,7 @@ func editSchedule(w http.ResponseWriter, r *http.Request) {
 
 	days, _ := strconv.Atoi(r.FormValue("days"))
 
-	// Parse selected services and consumables (multiple values possible)
+	// Services & consumables
 	svcVals := r.Form["services[]"]
 	consVals := r.Form["consumables[]"]
 
@@ -556,7 +575,6 @@ func editSchedule(w http.ResponseWriter, r *http.Request) {
 			svcIDs = append(svcIDs, oid)
 		}
 	}
-
 	var consIDs []primitive.ObjectID
 	for _, c := range consVals {
 		if oid, err := primitive.ObjectIDFromHex(c); err == nil {
@@ -567,12 +585,7 @@ func editSchedule(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := getCtx()
 	defer cancel()
 
-	// Update the specific schedule in the array
-	filter := bson.M{
-		"_id":          objMaintenance,
-		"shedules._id": objSchedule,
-	}
-
+	filter := bson.M{"_id": objMaintenance, "shedules._id": objSchedule}
 	update := bson.M{
 		"$set": bson.M{
 			"shedules.$.label":        r.FormValue("label"),
@@ -590,8 +603,13 @@ func editSchedule(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Redirect back to schedule list with success message
-	http.Redirect(w, r, "/schedules?maintenance_id="+maintenanceID+"&message=Schedule updated successfully&type=success", http.StatusSeeOther)
+	var maintenance MainteneceShedule
+	if err := db.Collection("maintenances").FindOne(ctx, bson.M{"_id": objMaintenance}).Decode(&maintenance); err != nil {
+		http.Error(w, "Maintenance not found for redirect", http.StatusInternalServerError)
+		return
+	}
+
+	http.Redirect(w, r, "/schedules?asset_id="+maintenance.AssetID.Hex()+"&message=Schedule updated successfully&type=success", http.StatusSeeOther)
 }
 
 // Delete schedule
@@ -619,7 +637,6 @@ func deleteSchedule(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := getCtx()
 	defer cancel()
 
-	// Remove the schedule from the array
 	filter := bson.M{"_id": objMaintenance}
 	update := bson.M{"$pull": bson.M{"shedules": bson.M{"_id": objSchedule}}}
 
@@ -629,8 +646,13 @@ func deleteSchedule(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Redirect back to schedule list with success message
-	http.Redirect(w, r, "/schedules?maintenance_id="+maintenanceID+"&message=Schedule deleted successfully&type=success", http.StatusSeeOther)
+	var maintenance MainteneceShedule
+	if err := db.Collection("maintenances").FindOne(ctx, bson.M{"_id": objMaintenance}).Decode(&maintenance); err != nil {
+		http.Error(w, "Maintenance not found for redirect", http.StatusInternalServerError)
+		return
+	}
+
+	http.Redirect(w, r, "/schedules?asset_id="+maintenance.AssetID.Hex()+"&message=Schedule deleted successfully&type=success", http.StatusSeeOther)
 }
 
 // View maintenance with all schedules
@@ -662,7 +684,6 @@ func viewMaintenance(w http.ResponseWriter, r *http.Request) {
 	// Build name maps
 	svcNames, consNames := buildNameMaps(ctx, svcIDs, consIDs)
 
-	// Render view with lookup maps available to template (keys are hex strings)
 	data := struct {
 		MainteneceShedule
 		ServiceNames    map[string]string
@@ -676,12 +697,10 @@ func viewMaintenance(w http.ResponseWriter, r *http.Request) {
 	renderTemplate(w, "view.html", data)
 }
 
-// Add schedule (backward compatibility)
 func addShedule(w http.ResponseWriter, r *http.Request) {
 	addSchedule(w, r)
 }
 
-// Delete schedule (backward compatibility)
 func deleteShedule(w http.ResponseWriter, r *http.Request) {
 	deleteSchedule(w, r)
 }
