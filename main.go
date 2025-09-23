@@ -55,6 +55,14 @@ func main() {
 	http.HandleFunc("/maintenances/edit", editMaintenance)
 	http.HandleFunc("/maintenances/view", viewMaintenance)
 	http.HandleFunc("/maintenances/delete", deleteMaintenance)
+
+	// Schedule Routes
+	http.HandleFunc("/schedules", listSchedules)
+	http.HandleFunc("/schedules/add", addSchedule)
+	http.HandleFunc("/schedules/edit", editSchedule)
+	http.HandleFunc("/schedules/delete", deleteSchedule)
+
+	// Deprecated routes - keeping for backward compatibility
 	http.HandleFunc("/shedules/add", addShedule)
 	http.HandleFunc("/shedules/delete", deleteShedule)
 
@@ -62,7 +70,6 @@ func main() {
 	http.HandleFunc("/add_asset", addAsset(db))
 	http.HandleFunc("/edit_asset/", editAsset(db))
 	http.HandleFunc("/delete_asset/", deleteAsset(db))
-
 
 	fmt.Printf("Using database: %v", db.Name())
 

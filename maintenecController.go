@@ -21,6 +21,111 @@ func getCtx() (context.Context, context.CancelFunc) {
 	return context.WithTimeout(context.Background(), 10*time.Second)
 }
 
+// Helper function to fetch services and consumables
+func fetchServicesAndConsumables(ctx context.Context) ([]struct {
+	ID    primitive.ObjectID `bson:"_id"`
+	Label string             `bson:"label"`
+}, []struct {
+	ID    primitive.ObjectID `bson:"_id"`
+	Label string             `bson:"label"`
+}) {
+	var services []struct {
+		ID    primitive.ObjectID `bson:"_id"`
+		Label string             `bson:"label"`
+	}
+	var consumables []struct {
+		ID    primitive.ObjectID `bson:"_id"`
+		Label string             `bson:"label"`
+	}
+
+	svcCursor, _ := db.Collection("services").Find(ctx, bson.M{})
+	_ = svcCursor.All(ctx, &services)
+	consCursor, _ := db.Collection("consumables").Find(ctx, bson.M{})
+	_ = consCursor.All(ctx, &consumables)
+
+	return services, consumables
+}
+
+// Helper function to build service and consumable name maps
+func buildNameMaps(ctx context.Context, svcIDs, consIDs []primitive.ObjectID) (map[string]string, map[string]string) {
+	// Fetch names for services
+	svcNames := map[string]string{}
+	if len(svcIDs) > 0 {
+		cursor, err := db.Collection("services").Find(ctx, bson.M{"_id": bson.M{"$in": svcIDs}})
+		if err == nil {
+			var rows []struct {
+				ID    primitive.ObjectID `bson:"_id"`
+				Label string             `bson:"label"`
+			}
+			if err := cursor.All(ctx, &rows); err == nil {
+				for _, r := range rows {
+					svcNames[r.ID.Hex()] = r.Label
+				}
+			}
+		}
+	}
+
+	// Fetch names for consumables
+	consNames := map[string]string{}
+	if len(consIDs) > 0 {
+		cursor, err := db.Collection("consumables").Find(ctx, bson.M{"_id": bson.M{"$in": consIDs}})
+		if err == nil {
+			var rows []struct {
+				ID    primitive.ObjectID `bson:"_id"`
+				Label string             `bson:"label"`
+			}
+			if err := cursor.All(ctx, &rows); err == nil {
+				for _, r := range rows {
+					consNames[r.ID.Hex()] = r.Label
+				}
+			}
+		}
+	}
+
+	return svcNames, consNames
+}
+
+// Helper function to collect service and consumable IDs from schedules
+func collectScheduleIDs(schedules []Shedule) ([]primitive.ObjectID, []primitive.ObjectID) {
+	svcIDSet := map[primitive.ObjectID]struct{}{}
+	consIDSet := map[primitive.ObjectID]struct{}{}
+	for _, s := range schedules {
+		for _, sid := range s.Services {
+			svcIDSet[sid] = struct{}{}
+		}
+		for _, cid := range s.Consumables {
+			consIDSet[cid] = struct{}{}
+		}
+	}
+
+	// Helper to convert set to slice for query
+	var svcIDs []primitive.ObjectID
+	for id := range svcIDSet {
+		svcIDs = append(svcIDs, id)
+	}
+	var consIDs []primitive.ObjectID
+	for id := range consIDSet {
+		consIDs = append(consIDs, id)
+	}
+
+	return svcIDs, consIDs
+}
+
+// Helper function to get asset label
+func getAssetLabel(ctx context.Context, assetID primitive.ObjectID) string {
+	var asset Asset
+	err := db.Collection("assets").FindOne(ctx, bson.M{"_id": assetID}).Decode(&asset)
+	if err == nil && asset.Label != "" {
+		return asset.Label
+	} else if err == nil {
+		// Asset found but label is empty, fallback to ID
+		return assetID.Hex()
+	} else {
+		// Asset not found, fallback to ID
+		return assetID.Hex()
+	}
+}
+
 // List maintenances for a specific asset
 func listMaintenance(w http.ResponseWriter, r *http.Request) {
 	assetID := r.URL.Query().Get("asset_id")
@@ -52,19 +157,7 @@ func listMaintenance(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Fetch available services and consumables
-	var services []struct {
-		ID    primitive.ObjectID `bson:"_id"`
-		Label string             `bson:"label"`
-	}
-	var consumables []struct {
-		ID    primitive.ObjectID `bson:"_id"`
-		Label string             `bson:"label"`
-	}
-
-	svcCursor, _ := db.Collection("services").Find(ctx, bson.M{})
-	_ = svcCursor.All(ctx, &services)
-	consCursor, _ := db.Collection("consumables").Find(ctx, bson.M{})
-	_ = consCursor.All(ctx, &consumables)
+	services, consumables := fetchServicesAndConsumables(ctx)
 
 	// Build lookup maps for labels
 	svcNames := map[string]string{}
@@ -77,18 +170,7 @@ func listMaintenance(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Fetch asset label from assets collection
-	assetLabel := ""
-	var asset struct {
-		ID    primitive.ObjectID `bson:"_id"`
-		Label string             `bson:"label"`
-	}
-	err = db.Collection("assets").FindOne(ctx, bson.M{"_id": objAssetID}).Decode(&asset)
-	if err == nil {
-		assetLabel = asset.Label
-	} else {
-		// Fallback to asset ID if label not found
-		assetLabel = assetID
-	}
+	assetLabel := getAssetLabel(ctx, objAssetID)
 
 	// Check for any message to display
 	message := r.URL.Query().Get("message")
@@ -96,14 +178,14 @@ func listMaintenance(w http.ResponseWriter, r *http.Request) {
 
 	// Pass asset_id, asset_label, items, services, consumables, and lookup maps
 	data := struct {
-		AssetID         string
-		AssetLabel      string
-		Items           []MainteneceShedule
-		Services        []struct {
+		AssetID    string
+		AssetLabel string
+		Items      []MainteneceShedule
+		Services   []struct {
 			ID    primitive.ObjectID `bson:"_id"`
 			Label string             `bson:"label"`
 		}
-		Consumables     []struct {
+		Consumables []struct {
 			ID    primitive.ObjectID `bson:"_id"`
 			Label string             `bson:"label"`
 		}
@@ -166,7 +248,7 @@ func createMaintenance(w http.ResponseWriter, r *http.Request) {
 			http.Redirect(w, r, "/maintenances?asset_id="+assetID+"&message=Error creating maintenance: "+err.Error()+"&type=error", http.StatusSeeOther)
 			return
 		}
-		
+
 		// Redirect with success message
 		http.Redirect(w, r, "/maintenances?asset_id="+assetID+"&message=Maintenance created successfully&type=success", http.StatusSeeOther)
 	}
@@ -198,24 +280,12 @@ func editMaintenance(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// Fetch available services and consumables to populate dropdowns
-		var services []struct {
-			ID    primitive.ObjectID `bson:"_id"`
-			Label string             `bson:"label"`
-		}
-		var consumables []struct {
-			ID    primitive.ObjectID `bson:"_id"`
-			Label string             `bson:"label"`
-		}
-
-		svcCursor, _ := db.Collection("services").Find(ctx, bson.M{})
-		_ = svcCursor.All(ctx, &services)
-		consCursor, _ := db.Collection("consumables").Find(ctx, bson.M{})
-		_ = consCursor.All(ctx, &consumables)
+		services, consumables := fetchServicesAndConsumables(ctx)
 
 		// Build data object that includes the maintenance, services, and consumables
 		data := struct {
 			MainteneceShedule
-			Services    []struct {
+			Services []struct {
 				ID    primitive.ObjectID `bson:"_id"`
 				Label string             `bson:"label"`
 			}
@@ -307,17 +377,87 @@ func deleteMaintenance(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/maintenances?asset_id="+item.AssetID.Hex()+"&message=Maintenance deleted successfully&type=success", http.StatusSeeOther)
 }
 
+// List schedules for a maintenance
+func listSchedules(w http.ResponseWriter, r *http.Request) {
+	maintenanceID := r.URL.Query().Get("maintenance_id")
+	if maintenanceID == "" {
+		http.Error(w, "Missing maintenance_id in query", http.StatusBadRequest)
+		return
+	}
+
+	objMaintenanceID, err := primitive.ObjectIDFromHex(maintenanceID)
+	if err != nil {
+		http.Error(w, "Invalid maintenance_id", http.StatusBadRequest)
+		return
+	}
+
+	ctx, cancel := getCtx()
+	defer cancel()
+
+	// Fetch the maintenance item
+	var maintenance MainteneceShedule
+	err = db.Collection("maintenances").FindOne(ctx, bson.M{"_id": objMaintenanceID}).Decode(&maintenance)
+	if err != nil {
+		http.Error(w, "Maintenance not found: "+err.Error(), http.StatusNotFound)
+		return
+	}
+
+	// Fetch asset label for display
+	assetLabel := getAssetLabel(ctx, maintenance.AssetID)
+
+	// Collect all referenced service and consumable IDs from schedules
+	svcIDs, consIDs := collectScheduleIDs(maintenance.Shedules)
+
+	// Build name maps
+	svcNames, consNames := buildNameMaps(ctx, svcIDs, consIDs)
+
+	// Check for any message to display
+	message := r.URL.Query().Get("message")
+	messageType := r.URL.Query().Get("type")
+
+	// Fetch available services and consumables for dropdowns
+	services, consumables := fetchServicesAndConsumables(ctx)
+
+	data := struct {
+		Maintenance MainteneceShedule
+		AssetLabel  string
+		Services    []struct {
+			ID    primitive.ObjectID `bson:"_id"`
+			Label string             `bson:"label"`
+		}
+		Consumables []struct {
+			ID    primitive.ObjectID `bson:"_id"`
+			Label string             `bson:"label"`
+		}
+		ServiceNames    map[string]string
+		ConsumableNames map[string]string
+		Message         string
+		MessageType     string
+	}{
+		Maintenance:     maintenance,
+		AssetLabel:      assetLabel,
+		Services:        services,
+		Consumables:     consumables,
+		ServiceNames:    svcNames,
+		ConsumableNames: consNames,
+		Message:         message,
+		MessageType:     messageType,
+	}
+
+	renderTemplate(w, "schedule_list.html", data)
+}
+
 // Add schedule
-func addShedule(w http.ResponseWriter, r *http.Request) {
+func addSchedule(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
-	parentID := r.FormValue("id")
-	objParent, err := primitive.ObjectIDFromHex(parentID)
+	maintenanceID := r.FormValue("maintenance_id")
+	objMaintenance, err := primitive.ObjectIDFromHex(maintenanceID)
 	if err != nil {
-		http.Error(w, "Invalid Parent ID", http.StatusBadRequest)
+		http.Error(w, "Invalid Maintenance ID", http.StatusBadRequest)
 		return
 	}
 
@@ -361,56 +501,136 @@ func addShedule(w http.ResponseWriter, r *http.Request) {
 	defer cancel()
 
 	// Ensure 'shedules' is an array (not null or missing) before pushing
-	ensureFilter := bson.M{"_id": objParent, "$or": []bson.M{{"shedules": bson.M{"$exists": false}}, {"shedules": nil}}}
+	ensureFilter := bson.M{"_id": objMaintenance, "$or": []bson.M{{"shedules": bson.M{"$exists": false}}, {"shedules": nil}}}
 	ensureUpdate := bson.M{"$set": bson.M{"shedules": []Shedule{}}}
 	_, _ = db.Collection("maintenances").UpdateOne(ctx, ensureFilter, ensureUpdate)
 
 	update := bson.M{"$push": bson.M{"shedules": shedule}}
-	_, err = db.Collection("maintenances").UpdateByID(ctx, objParent, update)
+	_, err = db.Collection("maintenances").UpdateByID(ctx, objMaintenance, update)
 	if err != nil {
 		http.Error(w, "Insert error: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	// Fetch the maintenance item to get the asset ID for redirect
-	var maintenance MainteneceShedule
-	if err := db.Collection("maintenances").FindOne(ctx, bson.M{"_id": objParent}).Decode(&maintenance); err != nil {
-		http.Error(w, "Error fetching maintenance: "+err.Error(), http.StatusInternalServerError)
+	// Redirect back to schedule list with success message
+	http.Redirect(w, r, "/schedules?maintenance_id="+maintenanceID+"&message=Schedule added successfully&type=success", http.StatusSeeOther)
+}
+
+// Edit schedule
+func editSchedule(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
-	// Redirect back to list with success message
-	http.Redirect(w, r, "/maintenances?asset_id="+maintenance.AssetID.Hex()+"&message=Schedule added successfully&type=success", http.StatusSeeOther)
-	return
+	maintenanceID := r.FormValue("maintenance_id")
+	scheduleID := r.FormValue("schedule_id")
+
+	objMaintenance, err := primitive.ObjectIDFromHex(maintenanceID)
+	if err != nil {
+		http.Error(w, "Invalid Maintenance ID", http.StatusBadRequest)
+		return
+	}
+
+	objSchedule, err := primitive.ObjectIDFromHex(scheduleID)
+	if err != nil {
+		http.Error(w, "Invalid Schedule ID", http.StatusBadRequest)
+		return
+	}
+
+	// Parse form
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Parse form error: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	days, _ := strconv.Atoi(r.FormValue("days"))
+
+	// Parse selected services and consumables (multiple values possible)
+	svcVals := r.Form["services[]"]
+	consVals := r.Form["consumables[]"]
+
+	var svcIDs []primitive.ObjectID
+	for _, s := range svcVals {
+		if oid, err := primitive.ObjectIDFromHex(s); err == nil {
+			svcIDs = append(svcIDs, oid)
+		}
+	}
+
+	var consIDs []primitive.ObjectID
+	for _, c := range consVals {
+		if oid, err := primitive.ObjectIDFromHex(c); err == nil {
+			consIDs = append(consIDs, oid)
+		}
+	}
+
+	ctx, cancel := getCtx()
+	defer cancel()
+
+	// Update the specific schedule in the array
+	filter := bson.M{
+		"_id":          objMaintenance,
+		"shedules._id": objSchedule,
+	}
+
+	update := bson.M{
+		"$set": bson.M{
+			"shedules.$.label":        r.FormValue("label"),
+			"shedules.$.shedule_type": r.FormValue("shedule_type"),
+			"shedules.$.days":         days,
+			"shedules.$.services":     svcIDs,
+			"shedules.$.consumables":  consIDs,
+			"shedules.$.notes":        r.FormValue("notes"),
+		},
+	}
+
+	_, err = db.Collection("maintenances").UpdateOne(ctx, filter, update)
+	if err != nil {
+		http.Error(w, "Update error: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Redirect back to schedule list with success message
+	http.Redirect(w, r, "/schedules?maintenance_id="+maintenanceID+"&message=Schedule updated successfully&type=success", http.StatusSeeOther)
 }
 
 // Delete schedule
-func deleteShedule(w http.ResponseWriter, r *http.Request) {
-	parentID := r.URL.Query().Get("id")
-	sid := r.URL.Query().Get("sid")
-
-	objParent, err := primitive.ObjectIDFromHex(parentID)
-	if err != nil {
-		http.Error(w, "Invalid Parent ID", http.StatusBadRequest)
+func deleteSchedule(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
-	objShedule, err := primitive.ObjectIDFromHex(sid)
+
+	maintenanceID := r.FormValue("maintenance_id")
+	scheduleID := r.FormValue("schedule_id")
+
+	objMaintenance, err := primitive.ObjectIDFromHex(maintenanceID)
 	if err != nil {
-		http.Error(w, "Invalid Shedule ID", http.StatusBadRequest)
+		http.Error(w, "Invalid Maintenance ID", http.StatusBadRequest)
+		return
+	}
+
+	objSchedule, err := primitive.ObjectIDFromHex(scheduleID)
+	if err != nil {
+		http.Error(w, "Invalid Schedule ID", http.StatusBadRequest)
 		return
 	}
 
 	ctx, cancel := getCtx()
 	defer cancel()
 
-	update := bson.M{"$pull": bson.M{"shedules": bson.M{"_id": objShedule}}}
-	_, err = db.Collection("maintenances").UpdateOne(ctx, bson.M{"_id": objParent}, update)
+	// Remove the schedule from the array
+	filter := bson.M{"_id": objMaintenance}
+	update := bson.M{"$pull": bson.M{"shedules": bson.M{"_id": objSchedule}}}
+
+	_, err = db.Collection("maintenances").UpdateOne(ctx, filter, update)
 	if err != nil {
 		http.Error(w, "Delete error: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	http.Redirect(w, r, "/maintenances/edit?id="+parentID, http.StatusSeeOther)
+	// Redirect back to schedule list with success message
+	http.Redirect(w, r, "/schedules?maintenance_id="+maintenanceID+"&message=Schedule deleted successfully&type=success", http.StatusSeeOther)
 }
 
 // View maintenance with all schedules
@@ -437,60 +657,10 @@ func viewMaintenance(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Collect all referenced service and consumable IDs from schedules
-	svcIDSet := map[primitive.ObjectID]struct{}{}
-	consIDSet := map[primitive.ObjectID]struct{}{}
-	for _, s := range item.Shedules {
-		for _, sid := range s.Services {
-			svcIDSet[sid] = struct{}{}
-		}
-		for _, cid := range s.Consumables {
-			consIDSet[cid] = struct{}{}
-		}
-	}
+	svcIDs, consIDs := collectScheduleIDs(item.Shedules)
 
-	// Helper to convert set to slice for query
-	var svcIDs []primitive.ObjectID
-	for id := range svcIDSet {
-		svcIDs = append(svcIDs, id)
-	}
-	var consIDs []primitive.ObjectID
-	for id := range consIDSet {
-		consIDs = append(consIDs, id)
-	}
-
-	// Fetch names for services
-	svcNames := map[string]string{}
-	if len(svcIDs) > 0 {
-		cursor, err := db.Collection("services").Find(ctx, bson.M{"_id": bson.M{"$in": svcIDs}})
-		if err == nil {
-			var rows []struct {
-				ID   primitive.ObjectID `bson:"_id"`
-				Name string             `bson:"name"`
-			}
-			if err := cursor.All(ctx, &rows); err == nil {
-				for _, r := range rows {
-					svcNames[r.ID.Hex()] = r.Name
-				}
-			}
-		}
-	}
-
-	// Fetch names for consumables
-	consNames := map[string]string{}
-	if len(consIDs) > 0 {
-		cursor, err := db.Collection("consumables").Find(ctx, bson.M{"_id": bson.M{"$in": consIDs}})
-		if err == nil {
-			var rows []struct {
-				ID   primitive.ObjectID `bson:"_id"`
-				Name string             `bson:"name"`
-			}
-			if err := cursor.All(ctx, &rows); err == nil {
-				for _, r := range rows {
-					consNames[r.ID.Hex()] = r.Name
-				}
-			}
-		}
-	}
+	// Build name maps
+	svcNames, consNames := buildNameMaps(ctx, svcIDs, consIDs)
 
 	// Render view with lookup maps available to template (keys are hex strings)
 	data := struct {
@@ -504,4 +674,14 @@ func viewMaintenance(w http.ResponseWriter, r *http.Request) {
 	}
 
 	renderTemplate(w, "view.html", data)
+}
+
+// Add schedule (backward compatibility)
+func addShedule(w http.ResponseWriter, r *http.Request) {
+	addSchedule(w, r)
+}
+
+// Delete schedule (backward compatibility)
+func deleteShedule(w http.ResponseWriter, r *http.Request) {
+	deleteSchedule(w, r)
 }
