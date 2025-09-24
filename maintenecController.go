@@ -46,7 +46,6 @@ func fetchServicesAndConsumables(ctx context.Context) ([]struct {
 	return services, consumables
 }
 
-// Helper function to build service and consumable name maps
 func buildNameMaps(ctx context.Context, svcIDs, consIDs []primitive.ObjectID) (map[string]string, map[string]string) {
 
 	svcNames := map[string]string{}
@@ -85,7 +84,6 @@ func buildNameMaps(ctx context.Context, svcIDs, consIDs []primitive.ObjectID) (m
 	return svcNames, consNames
 }
 
-// Helper function to collect service and consumable IDs from schedules
 func collectScheduleIDs(schedules []Shedule) ([]primitive.ObjectID, []primitive.ObjectID) {
 	svcIDSet := map[primitive.ObjectID]struct{}{}
 	consIDSet := map[primitive.ObjectID]struct{}{}
@@ -204,7 +202,6 @@ func listMaintenance(w http.ResponseWriter, r *http.Request) {
 	renderTemplate(w, "list.html", data)
 }
 
-// Create new maintenance (asset_id comes from URL)
 func createMaintenance(w http.ResponseWriter, r *http.Request) {
 	assetID := r.URL.Query().Get("asset_id")
 	if assetID == "" {
@@ -239,12 +236,11 @@ func createMaintenance(w http.ResponseWriter, r *http.Request) {
 
 		_, err := db.Collection("maintenances").InsertOne(ctx, doc)
 		if err != nil {
-			// Handle error with a proper message
+
 			http.Redirect(w, r, "/maintenances?asset_id="+assetID+"&message=Error creating maintenance: "+err.Error()+"&type=error", http.StatusSeeOther)
 			return
 		}
 
-		// Redirect with success message
 		http.Redirect(w, r, "/maintenances?asset_id="+assetID+"&message=Maintenance created successfully&type=success", http.StatusSeeOther)
 	}
 }
@@ -274,7 +270,6 @@ func editMaintenance(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		// Fetch available services and consumables to populate dropdowns
 		services, consumables := fetchServicesAndConsumables(ctx)
 
 		data := struct {
@@ -315,7 +310,6 @@ func editMaintenance(w http.ResponseWriter, r *http.Request) {
 		ctx, cancel := getCtx()
 		defer cancel()
 
-		// Fetch item so we can read AssetID for redirect after update
 		var item MainteneceShedule
 		if err := db.Collection("maintenances").FindOne(ctx, bson.M{"_id": objID}).Decode(&item); err != nil {
 			http.Error(w, "Not found", http.StatusNotFound)
@@ -416,12 +410,10 @@ func listSchedules(w http.ResponseWriter, r *http.Request) {
 		consIDs = append(consIDs, cIDs...)
 	}
 
-	// Build name maps for services & consumables
 	svcNames, consNames := buildNameMaps(ctx, svcIDs, consIDs)
 
 	assetLabel := getAssetLabel(ctx, objAssetID)
 
-	// Check for any message to display
 	message := r.URL.Query().Get("message")
 	messageType := r.URL.Query().Get("type")
 
@@ -480,7 +472,6 @@ func addSchedule(w http.ResponseWriter, r *http.Request) {
 
 	days, _ := strconv.Atoi(r.FormValue("days"))
 
-	// Parse selected services and consumables
 	svcVals := r.Form["services[]"]
 	consVals := r.Form["consumables[]"]
 
