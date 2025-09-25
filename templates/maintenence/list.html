@@ -164,7 +164,8 @@
                     <button onclick="openPopup('view-{{.ID.Hex}}')">View</button>
                     <button onclick="openPopup('edit-{{.ID.Hex}}')">Edit</button>
                     <button onclick="openPopup('delete-{{.ID.Hex}}')">Delete</button>
-                    <button onclick="openPopup('add-schedule-{{.ID.Hex}}')">Add Schedule</button>
+                    <!-- Link to schedule page -->
+                    <a href="/schedules?maintenance_id={{.ID.Hex}}" class="btn">Schedules</a>
                 </td>
             </tr>
             
@@ -233,66 +234,6 @@
                         <input type="hidden" name="id" value="{{.ID.Hex}}">
                         <button type="submit" class="btn">Yes, Delete</button>
                         <button type="button" class="btn" onclick="closePopup('delete-{{.ID.Hex}}')">Cancel</button>
-                    </form>
-                </div>
-            </div>
-            
-            <!-- Add Schedule Popup -->
-            <div id="add-schedule-{{.ID.Hex}}" class="popup">
-                <div class="popup-content">
-                    <span class="close" onclick="closePopup('add-schedule-{{.ID.Hex}}')">&times;</span>
-                    <h2>Add Schedule to {{.Lable}}</h2>
-                    <form method="POST" action="/shedules/add">
-                        <input type="hidden" name="id" value="{{.ID.Hex}}">
-                        <div class="form-group">
-                            <label for="schedule_label">Label:</label>
-                            <input type="text" id="schedule_label-{{.ID.Hex}}" name="label" required>
-                        </div>
-                        
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="shedule_type">Schedule Type:</label>
-                                <select id="shedule_type-{{.ID.Hex}}" name="shedule_type" required>
-                                    <option value="daily">Daily</option>
-                                    <option value="weekly">Weekly</option>
-                                    <option value="monthly">Monthly</option>
-                                    <option value="yearly">Yearly</option>
-                                </select>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label for="days">Days:</label>
-                                <input type="number" id="days-{{.ID.Hex}}" name="days" min="1" required>
-                            </div>
-                        </div>
-                        
-                        <!-- Services dropdown -->
-                        <div class="form-group">
-                            <label for="services">Services:</label>
-                            <select id="services-{{.ID.Hex}}" name="services[]" multiple size="4">
-                                {{range $.Services}}
-                                    <option value="{{.ID.Hex}}">{{.Label}}</option>
-                                {{end}}
-                            </select>
-                        </div>
-                        
-                        <!-- Consumables dropdown -->
-                        <div class="form-group">
-                            <label for="consumables">Consumables:</label>
-                            <select id="consumables-{{.ID.Hex}}" name="consumables[]" multiple size="4">
-                                {{range $.Consumables}}
-                                    <option value="{{.ID.Hex}}">{{.Label}}</option>
-                                {{end}}
-                            </select>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="notes">Notes:</label>
-                            <textarea id="notes-{{.ID.Hex}}" name="notes" rows="3"></textarea>
-                        </div>
-                        
-                        <button type="submit" class="btn">Add Schedule</button>
-                        <button type="button" class="btn" onclick="closePopup('add-schedule-{{.ID.Hex}}')">Cancel</button>
                     </form>
                 </div>
             </div>

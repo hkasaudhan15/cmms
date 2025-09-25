@@ -67,21 +67,21 @@ th {
 }
 
 .view {
-  background-color: #28a745;
+  background-color: #007BFF;
   color: #fff;
   font-size: 12px;
   padding: 4px 8px;
 }
 
 .edit {
-  background-color: #ffc107;
+  background-color: #007BFF;
   color: #000;
   font-size: 12px;
   padding: 4px 8px;
 }
 
 .delete {
-  background-color: #dc3545;
+  background-color: #007BFF;
   color: #fff;
   font-size: 12px;
   padding: 4px 8px;
