@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -104,4 +105,18 @@ func consumableDeleteHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	consumableCollection.DeleteOne(context.Background(), bson.M{"_id": id})
 	http.Redirect(w, r, "/consumable", http.StatusSeeOther)
+}
+
+// API handler for other microservices to fetch consumables
+func consumableAPIHandler(w http.ResponseWriter, r *http.Request) {
+	cur, err := consumableCollection.Find(context.Background(), bson.M{})
+	if err != nil {
+		http.Error(w, "Failed to retrieve consumables", http.StatusInternalServerError)
+		return
+	}
+	var consumables []Consumable
+	cur.All(context.Background(), &consumables)
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(consumables)
 }

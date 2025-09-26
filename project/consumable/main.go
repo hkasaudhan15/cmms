@@ -42,6 +42,8 @@ func main() {
 	http.HandleFunc("/consumable/edit", consumableEditHandler)
 	http.HandleFunc("/consumable/delete", consumableDeleteHandler)
 
+	// API routes for other microservices
+	http.HandleFunc("/consumables", consumableAPIHandler)
 
 	fmt.Println("Consumable microservice running on :8082")
 	http.ListenAndServe("localhost:8082", nil)

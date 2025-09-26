@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -92,4 +93,17 @@ func serviceDeleteHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	serviceCollection.DeleteOne(context.Background(), bson.M{"_id": id})
 	http.Redirect(w, r, "/service", http.StatusSeeOther)
+}
+
+func serviceAPIHandler(w http.ResponseWriter, r *http.Request) {
+	cur, err := serviceCollection.Find(context.Background(), bson.M{})
+	if err != nil {
+		http.Error(w, "Failed to retrieve services", http.StatusInternalServerError)
+		return
+	}
+	var services []Service
+	cur.All(context.Background(), &services)
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(services)
 }

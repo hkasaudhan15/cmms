@@ -43,6 +43,9 @@ func main() {
 	http.HandleFunc("/service/edit", serviceEditHandler)
 	http.HandleFunc("/service/delete", serviceDeleteHandler)
 
+	// API routes for other microservices
+	http.HandleFunc("/services", serviceAPIHandler)
+
 	fmt.Println("Service microservice running on :8081")
 	http.ListenAndServe("localhost:8081", nil)
 }
