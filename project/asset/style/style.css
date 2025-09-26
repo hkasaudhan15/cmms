@@ -120,7 +120,7 @@ form .save.active {
 }
 
 form .cancel { background-color: #555; }
-form .delete { background-color: red; }
+form .delete { background-color: #007BFF; }
 
 .btn:hover {
   opacity: 0.85;
