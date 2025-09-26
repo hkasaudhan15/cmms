@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Schedules</title>
+    <link rel="stylesheet" href="/style/style.css">
+    <style>
+        .popup { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); }
+        .popup-content { background-color: #fefefe; margin: 3% auto; padding: 25px; border: 1px solid #888; width: 85%; max-width: 900px; max-height: 85vh; overflow-y: auto; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
+        .close { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; line-height: 1; }
+        .close:hover, .close:focus { color: black; text-decoration: none; }
+        .button-group { margin: 10px 0; }
+        button, .btn { padding: 10px 18px; margin: 5px 2px; cursor: pointer; border: none; border-radius: 4px; background-color: #007bff; color: white; font-size: 14px; transition: background-color 0.3s; }
+        button:hover, .btn:hover { background-color: #0056b3; }
+        .add-btn { background-color: #28a745; }
+        .add-btn:hover { background-color: #218838; }
+        .schedule-item { border: 1px solid #ddd; padding: 10px; margin: 10px 0; background-color: #f9f9f9; }
+        .form-group { margin: 15px 0; }
+        .form-group label { display: block; margin-bottom: 8px; font-weight: bold; color: #333; }
+        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; font-size: 14px; }
+        .form-row { display: flex; gap: 15px; flex-wrap: wrap; }
+        .form-row .form-group { flex: 1; min-width: 200px; }
+        .message { padding: 10px; margin: 10px 0; border-radius: 4px; }
+        .success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        select[multiple] { height: auto; min-height: 100px; padding: 5px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background-color: #f2f2f2; color: black; font-weight: bold; }
+        tr:hover { background-color: #f5f5f5; }
+    </style>
+    <script>
+        function openPopup(popupId) { document.getElementById(popupId).style.display = "block"; }
+        function closePopup(popupId) { document.getElementById(popupId).style.display = "none"; }
+
+        window.addEventListener('click', function(event) {
+            var popups = document.querySelectorAll('.popup');
+            popups.forEach(function(popup) { if (event.target === popup) { popup.style.display = "none"; } });
+        });
+
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                var openPopups = document.querySelectorAll('.popup[style*="block"]');
+                openPopups.forEach(function(popup) { popup.style.display = "none"; });
+            }
+        });
+    </script>
+</head>
+<body>
+<h1>Schedules for Asset: {{.AssetLabel}}</h1>
+
+{{if .Message}}
+    <div class="message {{.MessageType}}">{{.Message}}</div>
+{{end}}
+
+<div class="button-group" style="text-align: right;">
+    <button class="add-btn" onclick="openPopup('add-schedule')">Add Schedule</button>
+</div>
+
+{{if .Schedules}}
+    <table>
+        <thead>
+            <tr>
+                <th>Maintenance</th>
+                <th>Label</th>
+                <th>Type</th>
+                <th>Days</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+        {{range .Schedules}}
+            {{ $mid := "" }}
+            {{ if .MaintenanceID }}
+                {{ $mid = .MaintenanceID.Hex }}
+            {{ end }}
+            <tr>
+                <td>{{index $.MaintMap $mid}}</td>
+                <td>{{.Lable}}</td>
+                <td>{{.SheduleType}}</td>
+                <td>{{.Days}}</td>
+                <td>
+                    <button onclick="openPopup('view-{{.ID.Hex}}')">View</button>
+                    <button onclick="openPopup('edit-{{.ID.Hex}}')">Edit</button>
+                    <button onclick="openPopup('delete-{{.ID.Hex}}')">Delete</button>
+                </td>
+            </tr>
+
+                <!-- View Popup -->
+                <div id="view-{{.ID.Hex}}" class="popup">
+                    <div class="popup-content">
+                        <span class="close" onclick="closePopup('view-{{.ID.Hex}}')">&times;</span>
+                        <h2>View Schedule: {{.Lable}}</h2>
+                                {{ $mid := "" }}
+                                {{ if .MaintenanceID }}
+                                    {{ $mid = .MaintenanceID.Hex }}
+                                {{ end }}
+                                <p><strong>Maintenance:</strong> {{index $.MaintMap $mid}}</p>
+                        <p><strong>Type:</strong> {{.SheduleType}}</p>
+                        <p><strong>Days:</strong> {{.Days}}</p>
+                        <p><strong>Notes:</strong> {{.Notes}}</p>
+                        {{if gt (len .Services) 0}}
+                            <h3>Services:</h3>
+                            <ul>
+                                {{range .Services}}
+                                    <li>{{index $.ServiceNames .Hex}}</li>
+                                {{end}}
+                            </ul>
+                        {{end}}
+                        {{if gt (len .Consumables) 0}}
+                            <h3>Consumables:</h3>
+                            <ul>
+                                {{range .Consumables}}
+                                    <li>{{index $.ConsumableNames .Hex}}</li>
+                                {{end}}
+                            </ul>
+                        {{end}}
+                        <button type="button" class="btn" onclick="closePopup('view-{{.ID.Hex}}')">Close</button>
+                    </div>
+                </div>
+
+                <!-- Edit Popup -->
+                <div id="edit-{{.ID.Hex}}" class="popup">
+                    <div class="popup-content">
+                        <span class="close" onclick="closePopup('edit-{{.ID.Hex}}')">&times;</span>
+                        <h2>Edit Schedule: {{.Lable}}</h2>
+                        <form method="POST" action="/schedules/edit">
+                            <input type="hidden" name="schedule_id" value="{{.ID.Hex}}">
+                            <div class="form-group">
+                                <label for="label-{{.ID.Hex}}">Label:</label>
+                                <input type="text" id="label-{{.ID.Hex}}" name="label" value="{{.Lable}}" required>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="shedule_type-{{.ID.Hex}}">Schedule Type:</label>
+                                    <select id="shedule_type-{{.ID.Hex}}" name="shedule_type" required>
+                                        <option value="daily" {{if eq .SheduleType "daily"}}selected{{end}}>Daily</option>
+                                        <option value="weekly" {{if eq .SheduleType "weekly"}}selected{{end}}>Weekly</option>
+                                        <option value="monthly" {{if eq .SheduleType "monthly"}}selected{{end}}>Monthly</option>
+                                        <option value="yearly" {{if eq .SheduleType "yearly"}}selected{{end}}>Yearly</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="days-{{.ID.Hex}}">Days:</label>
+                                    <input type="number" id="days-{{.ID.Hex}}" name="days" min="1" value="{{.Days}}" required>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="services-{{.ID.Hex}}">Services:</label>
+                                <select id="services-{{.ID.Hex}}" name="services[]" multiple size="4">
+                                    {{range $.Services}}
+                                        <option value="{{.ID.Hex}}" {{if (index $.ServiceNames .ID.Hex)}}selected{{end}}>{{.Label}}</option>
+                                    {{end}}
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="consumables-{{.ID.Hex}}">Consumables:</label>
+                                <select id="consumables-{{.ID.Hex}}" name="consumables[]" multiple size="4">
+                                    {{range $.Consumables}}
+                                        <option value="{{.ID.Hex}}" {{if (index $.ConsumableNames .ID.Hex)}}selected{{end}}>{{.Label}}</option>
+                                    {{end}}
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="notes-{{.ID.Hex}}">Notes:</label>
+                                <textarea id="notes-{{.ID.Hex}}" name="notes" rows="3">{{.Notes}}</textarea>
+                            </div>
+                            <button type="submit" class="btn">Save Changes</button>
+                            <button type="button" class="btn" onclick="closePopup('edit-{{.ID.Hex}}')">Cancel</button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Delete Popup -->
+                <div id="delete-{{.ID.Hex}}" class="popup">
+                    <div class="popup-content">
+                        <span class="close" onclick="closePopup('delete-{{.ID.Hex}}')">&times;</span>
+                        <h2>Delete Schedule</h2>
+                        {{ $mid := "" }}
+                        {{ if .MaintenanceID }}
+                            {{ $mid = .MaintenanceID.Hex }}
+                        {{ end }}
+                        <p>Are you sure you want to delete schedule <strong>{{.Lable}}</strong> for maintenance <strong>{{index $.MaintMap $mid}}</strong>?</p>
+                        <form method="POST" action="/schedules/delete">
+                            <input type="hidden" name="schedule_id" value="{{.ID.Hex}}">
+                            <button type="submit" class="btn">Yes, Delete</button>
+                            <button type="button" class="btn" onclick="closePopup('delete-{{.ID.Hex}}')">Cancel</button>
+                        </form>
+                    </div>
+                </div>
+        {{end}}
+        </tbody>
+    </table>
+{{else}}
+    <p>No schedules found for this asset.</p>
+{{end}}
+
+<!-- Add Schedule Popup -->
+<div id="add-schedule" class="popup">
+    <div class="popup-content">
+        <span class="close" onclick="closePopup('add-schedule')">&times;</span>
+        <h2>Add New Schedule</h2>
+        <form method="POST" action="/schedules/add">
+            <div class="form-group">
+                <label for="maintenance_id">Maintenance:</label>
+                <select id="maintenance_id" name="maintenance_id">
+                    <option value="">(No maintenance / assign later)</option>
+                    {{range .Maintenances}}
+                        <option value="{{.ID.Hex}}">{{.Lable}}</option>
+                    {{end}}
+                </select>
+                <input type="hidden" name="asset_id" value="{{.AssetID}}">
+            </div>
+            <div class="form-group">
+                <label for="schedule_label">Label:</label>
+                <input type="text" id="schedule_label" name="label" required>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="shedule_type">Schedule Type:</label>
+                    <select id="shedule_type" name="shedule_type" required>
+                        <option value="daily">Daily</option>
+                        <option value="weekly">Weekly</option>
+                        <option value="monthly">Monthly</option>
+                        <option value="yearly">Yearly</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="days">Days:</label>
+                    <input type="number" id="days" name="days" min="1" required>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="services">Services:</label>
+                <select id="services" name="services[]" multiple size="4">
+                    {{range $.Services}}
+                        <option value="{{.ID.Hex}}">{{.Label}}</option>
+                    {{end}}
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="consumables">Consumables:</label>
+                <select id="consumables" name="consumables[]" multiple size="4">
+                    {{range $.Consumables}}
+                        <option value="{{.ID.Hex}}">{{.Label}}</option>
+                    {{end}}
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="notes">Notes:</label>
+                <textarea id="notes" name="notes" rows="3"></textarea>
+            </div>
+            <button type="submit" class="btn">Add Schedule</button>
+            <button type="button" class="btn" onclick="closePopup('add-schedule')">Cancel</button>
+        </form>
+    </div>
+</div>
+
+</body>
+</html>

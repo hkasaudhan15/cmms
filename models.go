@@ -44,7 +44,7 @@ type Asset struct {
 }
 
 type AssetsPageData struct {
-    Data    []Asset
-    Message string
-    Error   string
+	Data    []Asset
+	Message string
+	Error   string
 }
