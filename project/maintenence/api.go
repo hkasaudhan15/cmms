@@ -3,12 +3,13 @@ package main
 import (
 	"encoding/json"
 	"net/http"
+
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 // Helper function to fetch services from API
 func fetchServicesFromAPI() ([]Service, error) {
-	resp, err := http.Get("http://localhost:5500/services")
+	resp, err := http.Get("http://localhost:8081/services")
 	if err != nil {
 		return nil, err
 	}
@@ -24,7 +25,7 @@ func fetchServicesFromAPI() ([]Service, error) {
 
 // Helper function to fetch consumables from API
 func fetchConsumablesFromAPI() ([]Consumable, error) {
-	resp, err := http.Get("http://localhost:5500/consumables")
+	resp, err := http.Get("http://localhost:8082/consumables")
 	if err != nil {
 		return nil, err
 	}
