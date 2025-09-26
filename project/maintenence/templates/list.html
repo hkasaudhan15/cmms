@@ -152,26 +152,18 @@
             opacity: 0.6;
         }
         
-        /* CSS-only approach: Use a hidden checkbox to track changes */
+        .save-btn:not(:disabled) {
+            background-color: #007bff;
+            cursor: pointer;
+            opacity: 1;
+        }
+        
+        /* Hidden checkbox to track changes */
         .form-touched {
             position: absolute;
             left: -9999px;
             opacity: 0;
             pointer-events: none;
-        }
-        
-        /* Enable save button when form has been touched */
-        .edit-form:has(.form-touched:checked) .save-btn:disabled {
-            background-color: #007bff;
-            cursor: pointer;
-            opacity: 1;
-        }
-        
-        /* Alternative: Enable when any field is focused */
-        .edit-form:focus-within .save-btn:disabled {
-            background-color: #007bff;
-            cursor: pointer;
-            opacity: 1;
         }
     </style>
 </head>
@@ -259,7 +251,7 @@
                         <input type="checkbox" class="form-touched" id="touched-{{.ID.Hex}}">
                         <div class="form-group">
                             <label for="label">Label:</label>
-                            <input type="text" id="label-{{.ID.Hex}}" name="label" value="{{.Lable}}" required class="form-field" oninput="document.getElementById('touched-{{.ID.Hex}}').checked = true;">
+                            <input type="text" id="label-{{.ID.Hex}}" name="label" value="{{.Lable}}" required class="form-field" oninput="this.form.querySelector('.save-btn').disabled = false;">
                         </div>
                         <button type="submit" class="btn save-btn" disabled>Save Changes</button>
                         <button type="button" class="btn" onclick="closePopup('edit-{{.ID.Hex}}')">Cancel</button>

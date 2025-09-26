@@ -22,26 +22,18 @@
       opacity: 0.6;
     }
     
-    /* CSS-only approach: Use a hidden checkbox to track changes */
+    .save-btn:not(:disabled) {
+      background-color: #007bff;
+      cursor: pointer;
+      opacity: 1;
+    }
+    
+    /* Hidden checkbox to track changes */
     .form-touched {
       position: absolute;
       left: -9999px;
       opacity: 0;
       pointer-events: none;
-    }
-    
-    /* Enable save button when form has been touched */
-    .edit-form:has(.form-touched:checked) .save-btn:disabled {
-      background-color: #007bff;
-      cursor: pointer;
-      opacity: 1;
-    }
-    
-    /* Alternative: Enable when any field is focused */
-    .edit-form:focus-within .save-btn:disabled {
-      background-color: #007bff;
-      cursor: pointer;
-      opacity: 1;
     }
   </style>
 </head>
@@ -80,8 +72,8 @@
         <input type="hidden" name="original_label" value="{{$c.Label}}">
         <input type="hidden" name="original_notes" value="{{$c.Notes}}">
         <input type="checkbox" class="form-touched" id="touched-{{$i}}">
-        <label>Label:</label><input type="text" name="label" value="{{$c.Label}}" required class="form-field" oninput="document.getElementById('touched-{{$i}}').checked = true;"><br>
-        <label>Notes:</label><textarea name="notes" class="form-field" oninput="document.getElementById('touched-{{$i}}').checked = true;">{{$c.Notes}}</textarea><br>
+        <label>Label:</label><input type="text" name="label" value="{{$c.Label}}" required class="form-field" oninput="this.form.querySelector('.save-btn').disabled = false;"><br>
+        <label>Notes:</label><textarea name="notes" class="form-field" oninput="this.form.querySelector('.save-btn').disabled = false;">{{$c.Notes}}</textarea><br>
         <button type="submit" class="save-btn" disabled>Save</button>
         <a href="#" class="btn cancel">Cancel</a>
       </form>
