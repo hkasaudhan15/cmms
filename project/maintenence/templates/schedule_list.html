@@ -27,6 +27,47 @@
         th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
         th { background-color: #f2f2f2; color: black; font-weight: bold; }
         tr:hover { background-color: #f5f5f5; }
+        
+        /* Edit form styles for save button disable functionality */
+        .edit-form {
+            position: relative;
+        }
+        
+        .form-field {
+            transition: all 0.3s ease;
+        }
+        
+        .save-btn {
+            transition: all 0.3s ease;
+        }
+        
+        .save-btn:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+        
+        /* CSS-only approach: Use a hidden checkbox to track changes */
+        .form-touched {
+            position: absolute;
+            left: -9999px;
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+        /* Enable save button when form has been touched */
+        .edit-form:has(.form-touched:checked) .save-btn:disabled {
+            background-color: #007bff;
+            cursor: pointer;
+            opacity: 1;
+        }
+        
+        /* Alternative: Enable when any field is focused */
+        .edit-form:focus-within .save-btn:disabled {
+            background-color: #007bff;
+            cursor: pointer;
+            opacity: 1;
+        }
     </style>
     <script>
         function openPopup(popupId) { document.getElementById(popupId).style.display = "block"; }
@@ -123,16 +164,21 @@
                     <div class="popup-content">
                         <span class="close" onclick="closePopup('edit-{{.ID.Hex}}')">&times;</span>
                         <h2>Edit Schedule: {{.Lable}}</h2>
-                        <form method="POST" action="/schedules/edit">
+                        <form method="POST" action="/schedules/edit" class="edit-form">
                             <input type="hidden" name="schedule_id" value="{{.ID.Hex}}">
+                            <input type="hidden" name="original_label" value="{{.Lable}}">
+                            <input type="hidden" name="original_shedule_type" value="{{.SheduleType}}">
+                            <input type="hidden" name="original_days" value="{{.Days}}">
+                            <input type="hidden" name="original_notes" value="{{.Notes}}">
+                            <input type="checkbox" class="form-touched" id="touched-{{.ID.Hex}}">
                             <div class="form-group">
                                 <label for="label-{{.ID.Hex}}">Label:</label>
-                                <input type="text" id="label-{{.ID.Hex}}" name="label" value="{{.Lable}}" required>
+                                <input type="text" id="label-{{.ID.Hex}}" name="label" value="{{.Lable}}" required class="form-field" oninput="document.getElementById('touched-{{.ID.Hex}}').checked = true;">
                             </div>
                             <div class="form-row">
                                 <div class="form-group">
                                     <label for="shedule_type-{{.ID.Hex}}">Schedule Type:</label>
-                                    <select id="shedule_type-{{.ID.Hex}}" name="shedule_type" required>
+                                    <select id="shedule_type-{{.ID.Hex}}" name="shedule_type" required class="form-field" onchange="document.getElementById('touched-{{.ID.Hex}}').checked = true;">
                                         <option value="daily" {{if eq .SheduleType "daily"}}selected{{end}}>Daily</option>
                                         <option value="weekly" {{if eq .SheduleType "weekly"}}selected{{end}}>Weekly</option>
                                         <option value="monthly" {{if eq .SheduleType "monthly"}}selected{{end}}>Monthly</option>
@@ -141,12 +187,12 @@
                                 </div>
                                 <div class="form-group">
                                     <label for="days-{{.ID.Hex}}">Days:</label>
-                                    <input type="number" id="days-{{.ID.Hex}}" name="days" min="1" value="{{.Days}}" required>
+                                    <input type="number" id="days-{{.ID.Hex}}" name="days" min="1" value="{{.Days}}" required class="form-field" oninput="document.getElementById('touched-{{.ID.Hex}}').checked = true;">
                                 </div>
                             </div>
                             <div class="form-group">
                                 <label for="services-{{.ID.Hex}}">Services:</label>
-                                <select id="services-{{.ID.Hex}}" name="services[]" multiple size="4">
+                                <select id="services-{{.ID.Hex}}" name="services[]" multiple size="4" class="form-field" onchange="document.getElementById('touched-{{.ID.Hex}}').checked = true;">
                                     {{range $.Services}}
                                         <option value="{{.ID.Hex}}" {{if (index $.ServiceNames .ID.Hex)}}selected{{end}}>{{.Label}}</option>
                                     {{end}}
@@ -154,7 +200,7 @@
                             </div>
                             <div class="form-group">
                                 <label for="consumables-{{.ID.Hex}}">Consumables:</label>
-                                <select id="consumables-{{.ID.Hex}}" name="consumables[]" multiple size="4">
+                                <select id="consumables-{{.ID.Hex}}" name="consumables[]" multiple size="4" class="form-field" onchange="document.getElementById('touched-{{.ID.Hex}}').checked = true;">
                                     {{range $.Consumables}}
                                         <option value="{{.ID.Hex}}" {{if (index $.ConsumableNames .ID.Hex)}}selected{{end}}>{{.Label}}</option>
                                     {{end}}
@@ -162,9 +208,9 @@
                             </div>
                             <div class="form-group">
                                 <label for="notes-{{.ID.Hex}}">Notes:</label>
-                                <textarea id="notes-{{.ID.Hex}}" name="notes" rows="3">{{.Notes}}</textarea>
+                                <textarea id="notes-{{.ID.Hex}}" name="notes" rows="3" class="form-field" oninput="document.getElementById('touched-{{.ID.Hex}}').checked = true;">{{.Notes}}</textarea>
                             </div>
-                            <button type="submit" class="btn">Save Changes</button>
+                            <button type="submit" class="btn save-btn" disabled>Save Changes</button>
                             <button type="button" class="btn" onclick="closePopup('edit-{{.ID.Hex}}')">Cancel</button>
                         </form>
                     </div>

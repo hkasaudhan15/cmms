@@ -132,6 +132,47 @@
             min-height: 100px;
             padding: 5px;
         }
+        
+        /* Edit form styles for save button disable functionality */
+        .edit-form {
+            position: relative;
+        }
+        
+        .form-field {
+            transition: all 0.3s ease;
+        }
+        
+        .save-btn {
+            transition: all 0.3s ease;
+        }
+        
+        .save-btn:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+        
+        /* CSS-only approach: Use a hidden checkbox to track changes */
+        .form-touched {
+            position: absolute;
+            left: -9999px;
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+        /* Enable save button when form has been touched */
+        .edit-form:has(.form-touched:checked) .save-btn:disabled {
+            background-color: #007bff;
+            cursor: pointer;
+            opacity: 1;
+        }
+        
+        /* Alternative: Enable when any field is focused */
+        .edit-form:focus-within .save-btn:disabled {
+            background-color: #007bff;
+            cursor: pointer;
+            opacity: 1;
+        }
     </style>
 </head>
 <body>
@@ -212,13 +253,15 @@
                 <div class="popup-content">
                     <span class="close" onclick="closePopup('edit-{{.ID.Hex}}')">&times;</span>
                     <h2>Edit Maintenance</h2>
-                    <form method="POST" action="/maintenances/edit">
+                    <form method="POST" action="/maintenances/edit" class="edit-form">
                         <input type="hidden" name="id" value="{{.ID.Hex}}">
+                        <input type="hidden" name="original_label" value="{{.Lable}}">
+                        <input type="checkbox" class="form-touched" id="touched-{{.ID.Hex}}">
                         <div class="form-group">
                             <label for="label">Label:</label>
-                            <input type="text" id="label-{{.ID.Hex}}" name="label" value="{{.Lable}}" required>
+                            <input type="text" id="label-{{.ID.Hex}}" name="label" value="{{.Lable}}" required class="form-field" oninput="document.getElementById('touched-{{.ID.Hex}}').checked = true;">
                         </div>
-                        <button type="submit" class="btn">Save Changes</button>
+                        <button type="submit" class="btn save-btn" disabled>Save Changes</button>
                         <button type="button" class="btn" onclick="closePopup('edit-{{.ID.Hex}}')">Cancel</button>
                     </form>
                 </div>
